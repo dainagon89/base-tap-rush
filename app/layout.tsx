@@ -18,6 +18,9 @@ const ibmPlexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: 'Base Tap Rush',
   description: '10秒の反射神経チャレンジ。ハイスコアをBaseチェーンに記録しよう。',
+  other: {
+    'base:app_id': '6a4224fb8bbb28b54e0b3384',
+  },
 };
 
 export default function RootLayout({
