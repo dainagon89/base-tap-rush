@@ -1,8 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { concat, encodeFunctionData } from 'viem';
+import {
+  useAccount,
+  useReadContract,
+  useSendTransaction,
+  useWaitForTransactionReceipt,
+} from 'wagmi';
 import { CONTRACT_ADDRESS, highScoreBoardAbi } from '@/lib/contract';
+import { BUILDER_CODE_DATA_SUFFIX } from '@/lib/builderCode';
 import { TARGET_CHAIN_ID } from '@/lib/wagmiConfig';
 
 const GAME_SECONDS = 10;
@@ -29,7 +36,12 @@ export function Game() {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const { data: hash, writeContract, isPending: isSubmitting, error: writeError } = useWriteContract();
+  const {
+    data: hash,
+    sendTransaction,
+    isPending: isSubmitting,
+    error: writeError,
+  } = useSendTransaction();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
 
   const { data: bestScore, refetch: refetchBest } = useReadContract({
@@ -81,11 +93,19 @@ export function Game() {
 
   const onSubmit = () => {
     setSubmittedScore(score);
-    writeContract({
-      address: CONTRACT_ADDRESS,
+
+    // 通常のコントラクト呼び出しデータを作る
+    const callData = encodeFunctionData({
       abi: highScoreBoardAbi,
       functionName: 'submitScore',
       args: [BigInt(score)],
+    });
+
+    // 末尾にBuilder Codeの識別データ（ERC-8021）を付けて送信する。
+    // コントラクトはこの余分なデータを無視して通常通り動作する。
+    sendTransaction({
+      to: CONTRACT_ADDRESS,
+      data: concat([callData, BUILDER_CODE_DATA_SUFFIX]),
     });
   };
 
