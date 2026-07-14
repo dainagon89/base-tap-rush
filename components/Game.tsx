@@ -107,8 +107,7 @@ export function Game() {
     isConnected &&
     chainId === TARGET_CHAIN_ID &&
     score > 0 &&
-    submittedScore === null;
-
+    
   return (
     <div className="flex flex-col gap-6">
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-base-line bg-gradient-to-b from-base-panel to-base-ink">
