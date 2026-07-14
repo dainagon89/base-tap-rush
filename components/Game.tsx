@@ -103,10 +103,12 @@ export function Game() {
   };
 
   const canSubmit =
-    state === 'ended' &&
-    isConnected &&
-    chainId === TARGET_CHAIN_ID &&
-    score > 0 &&
+  state === 'ended' &&
+  isConnected &&
+  chainId === TARGET_CHAIN_ID &&
+  score > 0 &&
+  submittedScore === null;
+
     
   return (
     <div className="flex flex-col gap-6">
