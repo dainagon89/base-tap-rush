@@ -172,7 +172,7 @@ export function Game() {
                   <span className="text-emerald-400">
                     チェーンに記録されました ✓
                     {easHash && (
-                      
+                      <a
                         href={`https://base.easscan.org/attestation/view/${easHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
