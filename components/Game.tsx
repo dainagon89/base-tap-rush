@@ -1,19 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { concat, encodeFunctionData } from 'viem';
-import {
-  useAccount,
-  useReadContract,
-  useSendTransaction,
-  useWaitForTransactionReceipt,
-} from 'wagmi';
+import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { CONTRACT_ADDRESS, highScoreBoardAbi } from '@/lib/contract';
-import { BUILDER_CODE_DATA_SUFFIX } from '@/lib/builderCode';
 import { TARGET_CHAIN_ID } from '@/lib/wagmiConfig';
 
 const GAME_SECONDS = 10;
-const TARGET_SIZE_PCT = 14; // ターゲットの直径（コンテナに対する%）
+const TARGET_SIZE_PCT = 14;
 
 type GameState = 'idle' | 'playing' | 'ended';
 
@@ -33,15 +26,11 @@ export function Game() {
   const [timeLeft, setTimeLeft] = useState(GAME_SECONDS);
   const [position, setPosition] = useState(randomPosition());
   const [submittedScore, setSubmittedScore] = useState<number | null>(null);
+  const [easHash, setEasHash] = useState<string | null>(null);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const {
-    data: hash,
-    sendTransaction,
-    isPending: isSubmitting,
-    error: writeError,
-  } = useSendTransaction();
+  const { data: hash, writeContract, isPending: isSubmitting, error: writeError } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
 
   const { data: bestScore, refetch: refetchBest } = useReadContract({
@@ -57,6 +46,7 @@ export function Game() {
     setTimeLeft(GAME_SECONDS);
     setPosition(randomPosition());
     setSubmittedScore(null);
+    setEasHash(null);
     setState('playing');
   }, []);
 
@@ -80,10 +70,21 @@ export function Game() {
   }, [state]);
 
   useEffect(() => {
-    if (isConfirmed) {
+    if (isConfirmed && address && submittedScore !== null) {
       refetchBest();
+      // EASアテステーションをAPIルート経由で発行
+      fetch('/eas-attest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerAddress: address, score: submittedScore }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.hash) setEasHash(data.hash);
+        })
+        .catch((err) => console.error('EAS attest error:', err));
     }
-  }, [isConfirmed, refetchBest]);
+  }, [isConfirmed, address, submittedScore, refetchBest]);
 
   const onTap = () => {
     if (state !== 'playing') return;
@@ -93,19 +94,11 @@ export function Game() {
 
   const onSubmit = () => {
     setSubmittedScore(score);
-
-    // 通常のコントラクト呼び出しデータを作る
-    const callData = encodeFunctionData({
+    writeContract({
+      address: CONTRACT_ADDRESS,
       abi: highScoreBoardAbi,
       functionName: 'submitScore',
       args: [BigInt(score)],
-    });
-
-    // 末尾にBuilder Codeの識別データ（ERC-8021）を付けて送信する。
-    // コントラクトはこの余分なデータを無視して通常通り動作する。
-    sendTransaction({
-      to: CONTRACT_ADDRESS,
-      data: concat([callData, BUILDER_CODE_DATA_SUFFIX]),
     });
   };
 
@@ -119,7 +112,6 @@ export function Game() {
   return (
     <div className="flex flex-col gap-6">
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-base-line bg-gradient-to-b from-base-panel to-base-ink">
-        {/* HUD */}
         <div className="absolute left-0 top-0 z-10 flex w-full items-center justify-between p-4 font-mono text-sm">
           <span className="text-base-mist">
             SCORE <span className="text-white">{score.toString().padStart(2, '0')}</span>
@@ -176,7 +168,21 @@ export function Game() {
             {submittedScore !== null && (
               <p className="text-xs">
                 {isConfirming && <span className="text-base-mist">トランザクション確認中…</span>}
-                {isConfirmed && <span className="text-emerald-400">チェーンに記録されました ✓</span>}
+                {isConfirmed && (
+                  <span className="text-emerald-400">
+                    チェーンに記録されました ✓
+                    {easHash && (
+                      
+                        href={`https://base.easscan.org/attestation/view/${easHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-2 underline"
+                      >
+                        EAS証明書を見る
+                      </a>
+                    )}
+                  </span>
+                )}
                 {writeError && <span className="text-red-400">送信に失敗しました</span>}
               </p>
             )}
