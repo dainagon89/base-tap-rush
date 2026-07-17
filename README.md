@@ -1,110 +1,86 @@
 # Base Tap Rush
 
-10秒間のタップチャレンジ。ゲーム終了後、ウォレットを接続してハイスコアを
-**Base**チェーン上のコントラクトに記録できます。リーダーボードは
-オンチェーンデータから読み込まれ、誰でも検証可能です。
+10秒間の反射神経ゲーム。動くターゲットをタップしてスコアを競い、ハイスコアはBaseメインネット上に永続的に記録されます。
 
-- フロントエンド: Next.js 14 (App Router) + wagmi v2 + viem + Tailwind CSS
-- コントラクト: Solidity（`contracts/HighScoreBoard.sol`）
-- 対応ウォレット: ブラウザ拡張ウォレット（MetaMaskなど）, Coinbase Wallet
+**🎮 Play:** https://base-tap-rush-lilac.vercel.app
+**📦 GitHub:** https://github.com/dainagon89/base-tap-rush
 
 ---
 
-## 1. 事前準備
+## 概要
 
-- Node.js 18以上
-- ブラウザ拡張ウォレット（[MetaMask](https://metamask.io/)など）
-- テストする場合: Base Sepolia用のテストネットETH
-  （[Base公式の faucet 一覧](https://docs.base.org/base-chain/network-information/network-faucets)から取得できます）
+Base Tap Rush は、Baseチェーン上で動くオンチェーンゲームです。プレイヤーは10秒間のセッション内でできるだけ多くターゲットをタップし、そのスコアをオンチェーンに送信します。ハイスコアとリーダーボードはすべてスマートコントラクトに記録され、誰でもBasescan経由で検証可能です。
 
----
+すべてのスコア送信トランザクションには [ERC-8021 Builder Code](https://ercs.ethereum.org/) が付与されており、Baseエコシステム上でのビルダー活動として帰属(attribution)されます。
 
-## 2. コントラクトをデプロイする
+## 機能
 
-最も簡単な方法は [Remix IDE](https://remix.ethereum.org) を使う方法です。
+- 10秒間のリアクションゲームプレイ
+- スコアのオンチェーン記録(Base mainnet)
+- オンチェーンリーダーボード(トップ10)
+- ウォレットごとの自己ベストスコア取得
+- ERC-8021 Builder Codeによるトランザクション帰属
 
-1. Remixを開き、新規ファイル `HighScoreBoard.sol` を作成し、
-   `contracts/HighScoreBoard.sol` の内容をコピーして貼り付けます。
-2. 左メニューの **Solidity Compiler** タブで、コンパイラバージョンを
-   `0.8.24` 以上に設定し、**Compile** します。
-3. 左メニューの **Deploy & Run Transactions** タブを開きます。
-4. **Environment** を `Injected Provider - MetaMask` に設定します
-   （MetaMask側でネットワークを **Base Sepolia** に切り替えておいてください。
-   Base SepoliaがMetaMaskに登録されていない場合は
-   [chainlist.org](https://chainlist.org/?search=base+sepolia) から追加できます）。
-5. **Deploy** をクリックし、MetaMaskでトランザクションを承認します。
-6. デプロイ完了後に表示される**コントラクトアドレス**をコピーしておきます。
+## 技術スタック
 
-本番でBaseメインネットにデプロイする場合は、手順4のネットワークを
-**Base** に変更するだけです（メインネットETHが必要になります）。
+- **フレームワーク:** Next.js 14–16 (App Router)
+- **Web3ライブラリ:** wagmi, viem
+- **スタイリング:** Tailwind CSS
+- **スマートコントラクト:** Solidity (Remix IDEで開発)
+- **デプロイ:** Vercel
+- **チェーン:** Base Mainnet (Chain ID: 8453)
 
-Foundry / Hardhatを使い慣れている場合は、もちろんそちらでも構いません。
-コントラクトに外部依存はないため、そのままデプロイできます。
+## デプロイ済みURL
 
----
+| 項目 | URL |
+| --- | --- |
+| アプリ | https://base-tap-rush-lilac.vercel.app |
+| GitHub | https://github.com/dainagon89/base-tap-rush |
 
-## 3. フロントエンドをローカルで動かす
+## 環境変数の設定方法
+
+Vercelの `Settings → Environment Variables` から以下を設定してください(実際に必要な変数は `.env.example` を参照し、プロジェクト構成に合わせて調整してください):
 
 ```bash
-cd base-tap-rush
-npm install
-cp .env.example .env.local
+# .env.local (例)
+NEXT_PUBLIC_CONTRACT_ADDRESS=0x31503a2f1eEa2BCFA05e71754E82c6600C85FA69
+NEXT_PUBLIC_CHAIN_ID=8453
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id
 ```
 
-`.env.local` を編集し、デプロイしたコントラクトアドレスを設定します:
+設定後は Vercel の Deployments タブから **Redeploy** して反映してください。
 
-```
-NEXT_PUBLIC_CONTRACT_ADDRESS=0xあなたのコントラクトアドレス
-NEXT_PUBLIC_CHAIN_ID=84532
-```
+## コントラクト情報
 
-開発サーバーを起動:
+| 項目 | 値 |
+| --- | --- |
+| コントラクトアドレス | `0x31503a2f1eEa2BCFA05e71754E82c6600C85FA69` |
+| チェーン | Base Mainnet (Chain ID: 8453) |
+| Basescan | https://basescan.org/address/0x31503a2f1eEa2BCFA05e71754E82c6600C85FA69 |
 
-```bash
-npm run dev
-```
+### 主な読み取り関数
 
-`http://localhost:3000` を開いて確認してください。
+- `getTopScores()` — トップ10のスコア・プレイヤーアドレス・タイムスタンプを取得
+- `bestScore(address)` — 指定ウォレットの自己ベストスコアを取得
+- `getLeaderboardLength()` — リーダーボードの登録件数を取得
+
+## Builder Code (ERC-8021)
+
+すべてのスコア送信トランザクションに ERC-8021 Builder Code サフィックスが付与され、Baseに対して本アプリのビルダー活動として帰属します。
+
+| 項目 | 値 |
+| --- | --- |
+| Builder Code | `bc_l3jofats` |
+| Encoded | `0x62635f6c336a6f666174730b0080218021802180218021802180218021` |
+
+## その他
+
+| 項目 | 値 |
+| --- | --- |
+| Builder (ENS) | `dainagon.eth` |
+| Builder (Address) | `0x4128F1A04767F1856db4f1588F8250F9ED948D12` |
+| base.dev App ID | `6a4224fb8bbb28b54e0b3384` |
 
 ---
 
-## 4. Vercelにデプロイする
-
-1. このプロジェクトをGitHubリポジトリにpushします。
-2. [vercel.com](https://vercel.com) で **New Project** → 該当リポジトリを選択。
-3. **Environment Variables** に以下を追加:
-   - `NEXT_PUBLIC_CONTRACT_ADDRESS`
-   - `NEXT_PUBLIC_CHAIN_ID`
-4. **Deploy** をクリックすれば完了です。Framework Presetは自動でNext.jsが検出されます。
-
----
-
-## ディレクトリ構成
-
-```
-base-tap-rush/
-├── contracts/
-│   └── HighScoreBoard.sol   # オンチェーン・ハイスコアコントラクト
-├── app/
-│   ├── layout.tsx
-│   ├── page.tsx
-│   ├── providers.tsx        # wagmi / react-query プロバイダー
-│   └── globals.css
-├── components/
-│   ├── Game.tsx              # ゲーム本体・スコア送信
-│   ├── Leaderboard.tsx        # オンチェーン・リーダーボード表示
-│   └── WalletBar.tsx          # ウォレット接続UI
-├── lib/
-│   ├── wagmiConfig.ts          # チェーン・コネクタ設定
-│   └── contract.ts             # コントラクトアドレス・ABI
-└── .env.example
-```
-
-## カスタマイズのヒント
-
-- ゲーム時間や難易度: `components/Game.tsx` の `GAME_SECONDS` /
-  `TARGET_SIZE_PCT` を変更してください。
-- リーダーボードの最大件数: `contracts/HighScoreBoard.sol` の
-  `MAX_LEADERBOARD_SIZE`（再デプロイが必要です）。
-- WalletConnect対応など他のウォレットを増やしたい場合は
-  `lib/wagmiConfig.ts` の `connectors` 配列に追加してください。
+Built with ❤️ on [Base](https://base.org)
