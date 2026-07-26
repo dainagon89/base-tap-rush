@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { CONTRACT_ADDRESS, highScoreBoardAbi } from '@/lib/contract';
 import { TARGET_CHAIN_ID } from '@/lib/wagmiConfig';
+import { AdviceButton } from '@/components/AdviceButton';
 
 const GAME_SECONDS = 10;
 const TARGET_SIZE_PCT = 14;
@@ -187,6 +188,8 @@ export function Game() {
                 {writeError && <span className="text-red-400">送信に失敗しました</span>}
               </p>
             )}
+
+            <AdviceButton score={score} />
 
             <button
               onClick={startGame}
