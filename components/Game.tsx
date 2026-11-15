@@ -6,6 +6,10 @@ import { CONTRACT_ADDRESS, highScoreBoardAbi } from '@/lib/contract';
 import { TARGET_CHAIN_ID } from '@/lib/wagmiConfig';
 import { AdviceButton } from '@/components/AdviceButton';
 
+// Base Builder Code (bc_l3jofats) — ERC-8021 data suffix
+const BUILDER_CODE_SUFFIX =
+  '0x62635f6c336a6f666174730b0080218021802180218021802180218021' as const;
+
 const GAME_SECONDS = 10;
 const TARGET_SIZE_PCT = 14;
 
@@ -111,7 +115,6 @@ export function Game() {
   score > 0 &&
   submittedScore === null;
 
-    
   return (
     <div className="flex flex-col gap-6">
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-base-line bg-gradient-to-b from-base-panel to-base-ink">
