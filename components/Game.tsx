@@ -100,6 +100,7 @@ export function Game() {
       abi: highScoreBoardAbi,
       functionName: 'submitScore',
       args: [BigInt(score)],
+      dataSuffix: BUILDER_CODE_SUFFIX,
     });
   };
 
